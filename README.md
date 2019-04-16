@@ -1,1 +1,1 @@
-# Bibble-Text-analysis
+# Bible-Text-analysis
