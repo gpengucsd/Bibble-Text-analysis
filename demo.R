@@ -1,7 +1,7 @@
 library(tidyverse)
 library(tidytext)
-data <- read.csv('t_web.csv')%>%
-  mutate(field.4 = as.character(field.4))
+data <- read.csv('bible.csv')%>%
+  mutate(text = as.character(text))
 chapter23 <- data %>%
   filter(field.1 == 23)
 words <- chapter23 %>%
@@ -51,43 +51,7 @@ wordTFIDF <- word_field2 %>%
   ungroup()
 
 #####################
-chapter19 <- data %>%
-  filter(field.1 == 19)
-
-chapter19_combine <- chapter19 %>% group_by(field.2)%>% summarise( new =  paste(unlist(field.4), collapse =" "))
-library(stringr)
-library(text2vec)
-
-# select 500 rows for faster running times
-
-prep_fun = function(x) {
-  x %>% 
-    # make text lower case
-    str_to_lower %>% 
-    # remove non-alphanumeric symbols
-    str_replace_all("[^[:alnum:]]", " ") %>% 
-    # collapse multiple spaces
-    str_replace_all("\\s+", " ")
-}
-
-chapter19_combine$new_clean = prep_fun(chapter19_combine$new)
-
-
-it = itoken(chapter19_combine$new_clean, progressbar = FALSE)
-v = create_vocabulary(it) %>% prune_vocabulary(doc_proportion_max = 0.1, term_count_min = 5)
-vectorizer = vocab_vectorizer(v)
-
-
-
-dtm = create_dtm(it, vectorizer)
-tfidf = TfIdf$new()
-dtm_tfidf = fit_transform(dtm, tfidf)
-
-
-d1_d2_tfidf_cos_sim = sim2(x = dtm_tfidf, method = "cosine", norm = "l2")
-d1_d2_tfidf_cos_sim
-######################## whole book!
-data_combine <- data %>% group_by(field.1)%>% summarise( new =  paste(unlist(field.4), collapse =" "))
+data_combine <- data %>% group_by(Book)%>% summarise( new =  paste(unlist(text), collapse =" "))
 library(stringr)
 library(text2vec)
 
@@ -107,7 +71,7 @@ data_combine$new_clean = prep_fun(data_combine$new)
 
 
 it = itoken(data_combine$new_clean, progressbar = FALSE)
-v = create_vocabulary(it) %>% prune_vocabulary(doc_proportion_max = 0.1, term_count_min = 5)
+v = create_vocabulary(it) %>% prune_vocabulary(doc_proportion_max = 0.5, term_count_min = 1)
 vectorizer = vocab_vectorizer(v)
 
 
@@ -118,4 +82,55 @@ dtm_tfidf = fit_transform(dtm, tfidf)
 
 
 d1_d2_tfidf_cos_sim = sim2(x = dtm_tfidf, method = "cosine", norm = "l2")
-sort(d1_d2_tfidf_cos_sim[5,])
+sort(d1_d2_tfidf_cos_sim[33,],decreasing = TRUE)
+
+######################## whole book!
+
+data_combine <- data %>% group_by(Book)%>% summarise( new =  paste(unlist(text), collapse =" "))
+library(stopwords)
+stopwords_regex = paste(stopwords('en'), collapse = '\\b|\\b')
+stopwords_regex = paste0('\\b', stopwords_regex, '\\b')
+data_combine$new = stringr::str_replace_all(data_combine$new, stopwords_regex, '')
+library(stringr)
+library(text2vec)
+
+# select 500 rows for faster running times
+
+prep_fun = function(x) {
+  x %>% 
+    # make text lower case
+    str_to_lower %>% 
+    # remove non-alphanumeric symbols
+    str_replace_all("[^[:alnum:]]", " ") %>% 
+    # collapse multiple spaces
+    str_replace_all("\\s+", " ")
+}
+
+data_combine$new_clean = prep_fun(data_combine$new)
+
+
+it = itoken(data_combine$new_clean, progressbar = FALSE)
+v = create_vocabulary(it) %>% prune_vocabulary(doc_proportion_max = 0.5, term_count_min = 1)
+vectorizer = vocab_vectorizer(v)
+
+
+
+dtm = create_dtm(it, vectorizer)
+tfidf = TfIdf$new()
+dtm_tfidf = fit_transform(dtm, tfidf)
+
+
+d1_d2_tfidf_cos_sim = sim2(x = dtm_tfidf, method = "cosine", norm = "l2")
+sort(d1_d2_tfidf_cos_sim[352,1:28],decreasing = TRUE)
+####LSA
+lsa = LSA$new(n_topics = 100)
+dtm_tfidf_lsa = fit_transform(dtm_tfidf, lsa)
+d1_d2_tfidf_cos_sim = sim2(x = dtm_tfidf_lsa, method = "cosine", norm = "l2")
+d1_d2_tfidf_cos_sim[1:2, 1:5]
+
+####LDA
+set.seed(1234)
+lda_model = LDA$new(n_topics = 10)
+doc_topic_distr = lda_model$fit_transform(dtm, n_iter = 100)
+lda_model$plot()
+domTopic <- max.col(doc_topic_distr, ties.method = "first")
