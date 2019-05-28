@@ -169,12 +169,12 @@ csim <- csim %*% t(csim)
 cdist <- as.dist(1 - csim)
 hc <- hclust(cdist, "ward.D")
 
-clustering <- cutree(hc, 7)
+clustering <- cutree(hc, 10)
 
 plot(hc, main = "Hierarchical clustering of 100 NIH grant abstracts",
      ylab = "", xlab = "", yaxt = "n")
 
-rect.hclust(hc, 7, border = "red")
+rect.hclust(hc, 10, border = "red")
 
 
 p_words <- colSums(dtm) / sum(dtm)
