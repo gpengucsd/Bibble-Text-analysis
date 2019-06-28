@@ -1,3 +1,2 @@
 # Bible-Text-analysis
-aa
-A line I wrote on my local computer
+The project is aiming to apply NLP algorithms on bible text to find new idea
